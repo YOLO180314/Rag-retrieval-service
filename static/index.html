@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG 智能 FAQ 检索</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ═════════════════════════════════════════
+       CSS 变量（主题系统）
+       ═════════════════════════════════════════ */
+    :root {
+      --glass-rgb: 255, 255, 255;
+      --accent-rgb: 100, 130, 255;
+      --gold-rgb: 255, 200, 80;
+      --error-rgb: 255, 107, 107;
+      --green-rgb: 74, 222, 128;
+      --accent: #6688ff;
+
+      --bg-primary: #03030a;
+      --text-primary: #e8e8e8;
+      --text-heading: #fff;
+      --btn-bg: linear-gradient(135deg, #2a2a4a 0%, #1a1a3a 100%);
+      --btn-bg-hover: linear-gradient(135deg, #3a3a6a 0%, #2a2a5a 100%);
+      --btn-color: #fff;
+      --input-bg: rgba(var(--glass-rgb), 0.06);
+      --input-border: rgba(var(--glass-rgb), 0.1);
+      --input-color: #eee;
+      --card-bg: rgba(var(--glass-rgb), 0.08);
+      --card-border: rgba(var(--glass-rgb), 0.14);
+      --card-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      --card-shadow-hover: 0 4px 30px rgba(0,0,0,0.4);
+      --dropdown-bg: #0c0c1e;
+      --toast-bg: rgba(30,30,50,0.85);
+      --divider-line: rgba(var(--glass-rgb), 0.3);
+      --index-badge-color: #8aa4ff;
+
+      --canvas-0: #08081a;
+      --canvas-1: #040410;
+      --canvas-2: #010108;
+      --star-rgb: 255, 255, 255;
+    }
+
+    [data-theme="light"] {
+      --glass-rgb: 0, 0, 0;
+      --bg-primary: #f5f5f7;
+      --text-primary: #1a1a1a;
+      --text-heading: #111;
+      --btn-bg: linear-gradient(135deg, #e8e8f0 0%, #d8d8e8 100%);
+      --btn-bg-hover: linear-gradient(135deg, #d8d8e8 0%, #c8c8e0 100%);
+      --btn-color: #1a1a1a;
+      --input-bg: rgba(var(--glass-rgb), 0.04);
+      --input-border: rgba(var(--glass-rgb), 0.12);
+      --input-color: #1a1a1a;
+      --card-bg: rgba(var(--glass-rgb), 0.06);
+      --card-border: rgba(var(--glass-rgb), 0.10);
+      --card-shadow: 0 8px 40px rgba(0,0,0,0.08);
+      --card-shadow-hover: 0 4px 30px rgba(0,0,0,0.10);
+      --dropdown-bg: #f8f8fa;
+      --toast-bg: rgba(245,245,247,0.92);
+      --divider-line: rgba(var(--glass-rgb), 0.2);
+      --index-badge-color: #5570cc;
+
+      --canvas-0: #e8eaf0;
+      --canvas-1: #f0f0f5;
+      --canvas-2: #fafafc;
+      --star-rgb: 100, 100, 120;
+    }
+
+    body {
+      font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      background: var(--bg-primary);
+    }
+
+    #bgCanvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    header {
+      text-align: center;
+      padding: 60px 20px 30px;
+      position: relative;
+      z-index: 1;
+    }
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-heading);
+      letter-spacing: 2px;
+      text-shadow: 0 0 40px rgba(var(--accent-rgb), 0.4);
+    }
+    header p {
+      font-size: 13px;
+      color: rgba(var(--glass-rgb), 0.4);
+      margin-top: 10px;
+      letter-spacing: 1px;
+    }
+
+    /* ── 主题切换按钮 ── */
+    .theme-toggle {
+      position: absolute;
+      top: 20px; right: 24px;
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(var(--glass-rgb), 0.06);
+      border: 1px solid rgba(var(--glass-rgb), 0.1);
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 18px;
+      color: rgba(var(--glass-rgb), 0.5);
+      transition: all .3s;
+      z-index: 10;
+    }
+    .theme-toggle:hover {
+      background: rgba(var(--glass-rgb), 0.1);
+      color: rgba(var(--glass-rgb), 0.8);
+      border-color: rgba(var(--gold-rgb), 0.3);
+    }
+
+    /* ── 搜索卡片 ── */
+    .search-card {
+      max-width: 720px;
+      margin: 0 auto 40px;
+      padding: 32px 36px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: var(--card-shadow);
+      position: relative;
+      z-index: 1;
+    }
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      gap: 10px;
+    }
+    .input-icon-wrap {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+    .input-search-icon {
+      position: absolute;
+      left: 16px;
+      font-size: 15px;
+      color: rgba(var(--glass-rgb), 0.25);
+      pointer-events: none;
+      transition: color .3s;
+      z-index: 2;
+    }
+    .search-card input[type="text"] {
+      width: 100%;
+      padding: 14px 42px 14px 42px;
+      font-size: 15px;
+      color: var(--input-color);
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 16px;
+      outline: none;
+      transition: border .3s, box-shadow .3s, background .3s;
+    }
+    .search-card input::placeholder { color: rgba(var(--glass-rgb), 0.25); }
+    .search-card input:focus {
+      border-color: rgba(var(--accent-rgb), 0.5);
+      box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
+      background: rgba(var(--glass-rgb), 0.08);
+    }
+    .search-card input:focus ~ .input-search-icon {
+      color: rgba(var(--accent-rgb), 0.5);
+    }
+    .input-clear-btn {
+      position: absolute;
+      right: 8px;
+      width: 28px; height: 28px;
+      display: none;
+      align-items: center; justify-content: center;
+      background: transparent;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      color: rgba(var(--glass-rgb), 0.3);
+      transition: color .2s, background .2s;
+      z-index: 2;
+    }
+    .input-clear-btn.show { display: flex; }
+    .input-clear-btn:hover {
+      color: rgba(var(--glass-rgb), 0.6);
+      background: rgba(var(--glass-rgb), 0.06);
+    }
+    .search-card button {
+      padding: 0 32px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--btn-color);
+      background: var(--btn-bg);
+      border: 1px solid rgba(var(--accent-rgb), 0.2);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all .3s;
+      white-space: nowrap;
+      min-width: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .search-card button:hover {
+      background: var(--btn-bg-hover);
+      border-color: rgba(var(--accent-rgb), 0.4);
+      box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15);
+    }
+    .search-card button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    .btn-spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(var(--glass-rgb), 0.15);
+      border-top-color: rgba(var(--accent-rgb), 0.7);
+      border-radius: 50%;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── 搜索选项 ── */
+    .search-card .options {
+      margin-top: 16px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      align-items: center;
+      font-size: 13px;
+      color: rgba(var(--glass-rgb), 0.5);
+    }
+    .search-card .options label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .search-card .options input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+    .search-card .options input[type="number"] {
+      width: 56px;
+      padding: 4px 8px;
+      font-size: 13px;
+      color: var(--input-color);
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      text-align: center;
+    }
+    .search-card .options input[type="number"]:focus { outline: none; border-color: rgba(var(--accent-rgb), 0.4); }
+
+    /* ── 历史遮罩 ── */
+    .history-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.2);
+      z-index: 998;
+      pointer-events: none;  /* 点击穿透，避免吞掉输入框的 click 事件 */
+    }
+    .history-overlay.show { display: block; }
+
+    /* ── 搜索历史浮层 ── */
+    .history-dropdown {
+      display: none;
+      position: fixed;
+      z-index: 999;
+      width: 720px;
+      max-width: calc(100vw - 32px);
+      max-height: 400px;
+      overflow-y: auto;
+      background: var(--dropdown-bg);
+      border: 1px solid rgba(var(--glass-rgb), 0.12);
+      border-radius: 16px;
+      box-shadow: 0 20px 64px rgba(0,0,0,0.5);
+      animation: histIn .2s ease both;
+    }
+    .history-dropdown.show { display: block; }
+    @keyframes histIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .history-dropdown.show { display: block; }
+    .history-item {
+      padding: 10px 18px;
+      font-size: 13px;
+      color: rgba(var(--glass-rgb), 0.7);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background .2s;
+    }
+    .history-item:hover {
+      background: rgba(var(--accent-rgb), 0.06);
+      color: rgba(var(--glass-rgb), 0.9);
+    }
+    .history-item .hw-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 85%;
+    }
+    .history-item .hw-time {
+      font-size: 11px;
+      color: rgba(var(--glass-rgb), 0.3);
+      flex-shrink: 0;
+    }
+    .history-clear {
+      padding: 10px 18px;
+      font-size: 12px;
+      color: rgba(var(--error-rgb), 0.6);
+      cursor: pointer;
+      text-align: center;
+      border-top: 1px solid rgba(var(--glass-rgb), 0.08);
+      transition: color .2s, background .2s;
+    }
+    .history-clear:hover { color: rgba(var(--error-rgb), 0.9); background: rgba(var(--error-rgb), 0.04); }
+
+    /* ── 状态区域 ── */
+    #elStatus, #elRewrite, #elStats {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      min-height: 20px;
+    }
+    #elStatus {
+      font-size: 13px;
+      color: rgba(var(--accent-rgb), 0.6);
+      margin: 20px 0 10px;
+    }
+    #elRewrite {
+      font-size: 12px;
+      color: rgba(var(--gold-rgb), 0.5);
+      margin-bottom: 10px;
+      min-height: 18px;
+    }
+    #elStats {
+      font-size: 12px;
+      color: rgba(var(--glass-rgb), 0.35);
+      margin-bottom: 24px;
+    }
+
+    /* ── AI 摘要卡片 ── */
+    .summary-wrap {
+      max-width: 720px;
+      margin: 0 auto 28px;
+      padding: 0 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .summary-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(var(--accent-rgb), 0.15);
+      border-radius: 20px;
+      padding: 20px 28px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: var(--card-shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.04), transparent 50%);
+      pointer-events: none;
+    }
+    .summary-card .summary-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(var(--accent-rgb), 0.7);
+      position: relative;
+    }
+    .summary-card .summary-icon {
+      font-size: 16px;
+    }
+    .summary-card .summary-text {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text-primary);
+      opacity: 0.9;
+      position: relative;
+    }
+    .summary-card .summary-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: rgba(var(--glass-rgb), 0.4);
+    }
+    .summary-card .summary-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: rgba(var(--accent-rgb), 0.5);
+      animation: dotPulse 1.4s infinite ease-in-out;
+    }
+    .summary-card .summary-dot:nth-child(2) { animation-delay: 0.2s; }
+    .summary-card .summary-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dotPulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1.2); }
+    }
+
+    /* ── 结果卡片 ── */
+    .results-wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 16px 80px;
+      position: relative;
+      z-index: 1;
+    }
+    .result-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: var(--card-shadow);
+      transition: transform .3s, box-shadow .3s;
+      position: relative;
+      opacity: 0;
+      animation: cardIn .5s ease forwards;
+    }
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .result-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.03), transparent 60%);
+      pointer-events: none;
+    }
+    .result-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--card-shadow-hover);
+    }
+    .result-card .idx {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--index-badge-color);
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .result-card .question {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-heading);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .result-card .answer {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text-primary);
+      opacity: 0.85;
+    }
+    .result-card .meta {
+      margin-top: 16px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 12px;
+      color: rgba(var(--glass-rgb), 0.35);
+    }
+    .result-card .score-bar {
+      height: 3px;
+      background: rgba(var(--accent-rgb), 0.1);
+      border-radius: 2px;
+      margin-top: 14px;
+      overflow: hidden;
+    }
+    .result-card .score-fill {
+      height: 100%;
+      background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.5), rgba(var(--accent-rgb), 0.2));
+      border-radius: 2px;
+      transition: width .6s ease;
+    }
+
+    /* ── 卡片操作按钮（复制/收藏）── */
+    .card-actions {
+      position: absolute;
+      top: 18px;
+      right: 20px;
+      display: flex;
+      gap: 6px;
+      z-index: 2;
+    }
+    .card-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(var(--glass-rgb), 0.10);
+      border: 1px solid rgba(var(--glass-rgb), 0.12);
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      color: rgba(var(--glass-rgb), 0.5);
+      transition: all .25s;
+    }
+    .card-btn:hover {
+      background: rgba(var(--accent-rgb), 0.1);
+      border-color: rgba(var(--accent-rgb), 0.25);
+      color: rgba(var(--accent-rgb), 0.8);
+    }
+    .card-btn.fav-active {
+      background: rgba(var(--gold-rgb), 0.12);
+      border-color: rgba(var(--gold-rgb), 0.3);
+      color: #ffc850;
+    }
+
+    /* ── Toast 提示 ── */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+    }
+    .toast {
+      padding: 10px 24px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 500;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      animation: toastIn .35s ease, toastOut .4s ease 2.2s forwards;
+      pointer-events: auto;
+      white-space: nowrap;
+    }
+    .toast.copy-toast {
+      background: var(--toast-bg);
+      border: 1px solid rgba(var(--accent-rgb), 0.3);
+      color: #a0b4ff;
+      box-shadow: var(--card-shadow);
+    }
+    .toast.fav-toast {
+      background: var(--toast-bg);
+      border: 1px solid rgba(var(--gold-rgb), 0.3);
+      color: #ffc850;
+      box-shadow: var(--card-shadow);
+    }
+    @keyframes toastIn  { from { opacity:0; transform: translateY(-12px); } to { opacity:1; transform: translateY(0); } }
+    @keyframes toastOut { from { opacity:1; } to { opacity:0; transform: translateY(-8px); } }
+
+    /* ── 欢迎引导 ── */
+    .welcome-guide {
+      text-align: center;
+      padding: 80px 20px 60px;
+      z-index: 1;
+      position: relative;
+      animation: welcomeIn .8s ease both;
+    }
+    .welcome-guide .welcome-icon {
+      font-size: 56px;
+      margin-bottom: 24px;
+      animation: welcomeFloat 3s ease-in-out infinite;
+    }
+    .welcome-guide .welcome-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: rgba(var(--glass-rgb), 0.55);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    .welcome-guide .welcome-hint {
+      font-size: 13px;
+      color: rgba(var(--glass-rgb), 0.28);
+      letter-spacing: 1px;
+    }
+    @keyframes welcomeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes welcomeFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* ── 空结果 ── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: rgba(var(--glass-rgb), 0.3);
+      font-size: 14px;
+      z-index: 1;
+      position: relative;
+      animation: cardIn .5s ease both;
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+
+    /* ── 回到顶部 ── */
+    .back-to-top {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      cursor: pointer;
+      font-size: 18px;
+      color: rgba(var(--glass-rgb), 0.5);
+      box-shadow: var(--card-shadow);
+      backdrop-filter: blur(12px);
+      z-index: 50;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity .3s, transform .3s, color .2s, border-color .2s;
+      pointer-events: none;
+    }
+    .back-to-top.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .back-to-top:hover {
+      color: rgba(var(--accent-rgb), 0.8);
+      border-color: rgba(var(--accent-rgb), 0.3);
+    }
+
+    /* ── 滚动条 ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(var(--glass-rgb), 0.12); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(var(--glass-rgb), 0.2); }
+  </style>
+</head>
+<body>
+
+<canvas id="bgCanvas"></canvas>
+
+<header>
+  <button class="theme-toggle" id="btnTheme" onclick="toggleTheme()" title="切换亮色/暗黑模式">🌙</button>
+  <h1>RAG · 智能 FAQ 检索</h1>
+  <p>向量检索 &times; 大语言模型 &mdash; 探索知识的宇宙</p>
+</header>
+
+<!-- Toast 容器 -->
+<div class="toast-container" id="toastBox"></div>
+
+<!-- 历史遮罩 -->
+<div class="history-overlay" id="historyOverlay"></div>
+
+<!-- 搜索历史浮层（fixed 全屏最高层） -->
+<div class="history-dropdown" id="historyDropdown"></div>
+
+<!-- 搜索区域 -->
+<div class="search-card">
+  <div class="input-wrapper">
+    <div class="input-icon-wrap">
+      <span class="input-search-icon">🔍</span>
+      <input id="inputQ" type="text" placeholder="输入问题，例如：如何重置密码？" autocomplete="off" />
+      <button class="input-clear-btn" id="btnClear" onclick="clearInput()" title="清除">×</button>
+    </div>
+    <button id="btnSearch" onclick="doSearch()">搜 索</button>
+  </div>
+  <div class="options">
+    <label><input type="checkbox" id="cbRewrite" checked /> 查询改写</label>
+    <label>Top-K <input type="number" id="numK" value="5" min="1" max="20" /></label>
+  </div>
+</div>
+
+<!-- 状态 -->
+<div id="elStatus"></div>
+<div id="elRewrite" style="display:none;"></div>
+<div id="elStats" style="display:none;"></div>
+
+<!-- AI 摘要区域 -->
+<div class="summary-wrap" id="elSummary" style="display:none;"></div>
+
+<!-- 欢迎引导 -->
+<div class="welcome-guide" id="elWelcome">
+  <div class="welcome-icon">🔭</div>
+  <div class="welcome-title">探索知识宇宙</div>
+  <div class="welcome-hint">输入问题，智能检索 FAQ 答案</div>
+</div>
+
+<!-- 结果 -->
+<div class="results-wrap" id="elResults"></div>
+
+<!-- 回到顶部 -->
+<div class="back-to-top" id="btnTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</div>
+
+<script>
+/* ═════════════════════════════════════════
+   主题切换（暗黑 ⇄ 亮色）
+   ═════════════════════════════════════════ */
+const THEME_KEY = 'rag_theme';
+
+function getTheme() {
+  return localStorage.getItem(THEME_KEY) || 'dark';
+}
+function applyTheme(theme) {
+  const isDark = theme === 'dark';
+  document.documentElement.setAttribute('data-theme', isDark ? '' : 'light');
+  const btn = document.getElementById('btnTheme');
+  if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+  if (window._refreshCanvasTheme) window._refreshCanvasTheme();
+  localStorage.setItem(THEME_KEY, theme);
+}
+function toggleTheme() {
+  const next = getTheme() === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+}
+applyTheme(getTheme());
+
+/* ═════════════════════════════════════════
+   RAG 搜索逻辑
+   ═════════════════════════════════════════ */
+const API_BASE = '';
+
+const $ = id => document.getElementById(id);
+const inputQ    = $('inputQ');
+const btnSearch = $('btnSearch');
+const btnClear  = $('btnClear');
+const elStatus  = $('elStatus');
+const elRewrite = $('elRewrite');
+const elStats   = $('elStats');
+const elSummary = $('elSummary');
+const elWelcome = $('elWelcome');
+const elResults = $('elResults');
+
+// 监听输入框焦点 & 点击外部关闭
+inputQ.addEventListener('focus', () => { showDropdown(); });
+inputQ.addEventListener('click', () => { showDropdown(); });
+inputQ.addEventListener('input', () => {
+  btnClear.classList.toggle('show', inputQ.value.length > 0);
+});
+document.addEventListener('click', (e) => {
+  const wrapper = document.querySelector('.input-wrapper');
+  // 点击搜索框区域时不关闭，点击其他区域关闭
+  if (wrapper && wrapper.contains(e.target)) return;
+  // 点击浮层内部不关闭
+  const dd = $('historyDropdown');
+  if (dd.contains(e.target)) return;
+  closeHistory();
+});
+window.addEventListener('resize', () => {
+  if ($('historyDropdown').classList.contains('show')) positionHistoryDropdown();
+});
+inputQ.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+function clearInput() {
+  inputQ.value = '';
+  btnClear.classList.remove('show');
+  inputQ.focus();
+}
+
+/* ── 搜索历史（localStorage）── */
+const HIST_KEY = 'rag_search_history';
+const HIST_MAX = 20;
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch { return []; }
+}
+function saveHistory(list) {
+  localStorage.setItem(HIST_KEY, JSON.stringify(list.slice(0, HIST_MAX)));
+}
+function addHistory(q) {
+  const list = loadHistory().filter(h => h.q !== q);
+  list.unshift({ q, t: Date.now() });
+  saveHistory(list);
+}
+function clearHistory() {
+  localStorage.removeItem(HIST_KEY);
+  closeHistory();
+}
+
+function positionHistoryDropdown() {
+  const rect = inputQ.getBoundingClientRect();
+  const dd = $('historyDropdown');
+  // 浮层宽度与搜索框一致，水平居中于搜索框
+  const cardMaxWidth = 720;
+  const left = Math.max(16, rect.left + (rect.width - Math.min(rect.width, cardMaxWidth)) / 2);
+  dd.style.left = left + 'px';
+  dd.style.top  = (rect.bottom + 8) + 'px';
+  dd.style.width = Math.min(rect.width - 32, cardMaxWidth) + 'px';
+}
+function showDropdown() {
+  const list = loadHistory();
+  if (!list.length) return;
+  const dd = $('historyDropdown');
+  dd.innerHTML = list.map(h =>
+    `<div class="history-item" data-q="${CSS.escape(h.q)}">
+       <span class="hw-text">${escapeHtml(h.q)}</span>
+       <span class="hw">${fmtTime(h.t)}</span>
+     </div>`
+  ).join('') +
+    '<div class="history-clear" onclick="event.stopPropagation();clearHistory();">清空搜索历史</div>';
+  // 先定位再显示，遮罩和浮层同时出现防止闪动
+  positionHistoryDropdown();
+  $('historyOverlay').classList.add('show');
+  dd.classList.add('show');
+
+  // 绑定点击
+  dd.querySelectorAll('.history-item').forEach(el => {
+    el.addEventListener('click', () => {
+      inputQ.value = el.dataset.q;
+      closeHistory();
+      doSearch();
+    });
+  });
+}
+function closeHistory() {
+  $('historyDropdown').classList.remove('show');
+  $('historyOverlay').classList.remove('show');
+}
+
+function fmtTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString('zh-CN', {month:'short',day:'numeric'});
+}
+
+/* ── Toast ── */
+function showToast(msg, type) {
+  const box = $('toastBox');
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || 'copy-toast');
+  t.textContent = msg;
+  box.appendChild(t);
+  setTimeout(() => t.remove(), 2600);
+}
+
+/* ── 收藏（localStorage）── */
+const FAV_KEY = 'rag_favorites';
+function loadFavorites() {
+  try { return JSON.parse(localStorage.getItem(FAV_KEY)) || []; } catch { return []; }
+}
+function toggleFavorite(item) {
+  const list = loadFavorites();
+  const idx = list.findIndex(f => f.q === item.q && f.a === item.a);
+  if (idx >= 0) { list.splice(idx, 1); showToast('已取消收藏', 'fav-toast'); }
+  else { list.unshift(item); showToast('已收藏 ⭐', 'fav-toast'); }
+  localStorage.setItem(FAV_KEY, JSON.stringify(list));
+  // 刷新当前结果按钮状态
+  document.querySelectorAll('.result-card').forEach(card => {
+    const bq = card.querySelector('.question')?.textContent;
+    const ba = card.querySelector('.answer')?.textContent;
+    const btn = card.querySelector('.btn-fav');
+    if (btn && bq && ba) {
+      const isFav = loadFavorites().some(f => f.q === bq && f.a === ba);
+      btn.classList.toggle('fav-active', isFav);
+    }
+  });
+}
+
+/* ── 工具 ── */
+function escapeHtml(s) {
+  const d = document.createElement('div'); d.textContent = s; return d.innerHTML;
+}
+
+/* ── 主搜索 ── */
+async function doSearch() {
+  const q = inputQ.value.trim();
+  if (!q) { inputQ.focus(); return; }
+
+  btnSearch.disabled = true;
+  btnSearch.innerHTML = '<span class="btn-spinner"></span>';
+  elStatus.innerHTML = '';
+  elRewrite.textContent = '';
+  elRewrite.style.display = 'none';
+  elStats.textContent = '';
+  elStats.style.display = 'none';
+  elSummary.style.display = 'none';
+  elWelcome.style.display = 'none';
+  elResults.innerHTML = '';
+
+  const enableRewrite = $('cbRewrite').checked;
+  const topK = parseInt($('numK').value) || 5;
+
+  try {
+    const t0 = performance.now();
+    const resp = await fetch(`${API_BASE}/api/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q, enable_rewrite: enableRewrite, top_k: topK })
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+
+    // 查询改写提示（存到全局供摘要卡片使用）
+    window._lastRewrite = '';
+    if (data.rewritten_query && data.rewritten_query !== q) {
+      window._lastRewrite = data.rewritten_query;
+    }
+
+    // 无结果
+    if (!data.results || !data.results.length) {
+      elResults.innerHTML = `<div class="empty-state"><div class="icon">📭</div>未找到相关结果，请换个问法试试</div>`;
+      return;
+    }
+
+    // 渲染结果（后端返回 question/answer 在 metadata 中）
+    elResults.innerHTML = data.results.map((r, i) => {
+      const qText = r.metadata?.question || r.question || '';
+      const aText = r.metadata?.answer   || r.answer   || '';
+      const src   = r.metadata?.source   || r.source   || 'FAQ';
+      const favList = loadFavorites();
+      const isFav = favList.some(f => f.q === qText && f.a === aText);
+      return `
+        <div class="result-card" style="animation-delay:${i * 0.06}s">
+          <div class="card-actions">
+            <div class="card-btn btn-copy" onclick="copyAnswer(this)" title="复制答案">📋</div>
+            <div class="card-btn btn-fav ${isFav ? 'fav-active' : ''}" onclick="favCard(this)" title="收藏">⭐</div>
+          </div>
+          <div class="idx">#${i + 1} · 相似度 ${(r.score * 100).toFixed(1)}%</div>
+          <div class="question">${escapeHtml(qText)}</div>
+          <div class="answer">${escapeHtml(aText)}</div>
+          <div class="meta">
+            <span>📄 ${escapeHtml(src)}</span>
+          </div>
+          <div class="score-bar"><div class="score-fill" style="width:${(r.score * 100).toFixed(1)}%"></div></div>
+        </div>`;
+    }).join('');
+
+    // 结果底部耗时统计
+    elResults.innerHTML += `<div style="text-align:right;font-size:11px;color:rgba(var(--glass-rgb),0.25);margin-top:8px;padding:0 8px;">耗时 ${elapsed}s · 共 ${data.results.length} 条</div>`;
+
+    addHistory(q);
+
+    // ── AI 摘要 ──
+    fetchSummary(q, data.results, elapsed, data.results.length);
+
+  } catch (err) {
+    elStatus.innerHTML = `<span style="color:rgba(var(--error-rgb),0.8)">⚠️ 搜索失败：${escapeHtml(err.message)}</span>`;
+    elStatus.style.display = 'block';
+  } finally {
+    btnSearch.disabled = false;
+    btnSearch.textContent = '搜 索';
+  }
+}
+
+/* ── 复制答案 ── */
+function copyAnswer(btn) {
+  const card = btn.closest('.result-card');
+  const text = card.querySelector('.answer').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast('已复制到剪贴板 📋', 'copy-toast');
+  }).catch(() => {
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('已复制到剪贴板 📋', 'copy-toast');
+  });
+}
+
+/* ── 收藏卡片 ── */
+function favCard(btn) {
+  const card = btn.closest('.result-card');
+  const item = {
+    q: card.querySelector('.question').textContent,
+    a: card.querySelector('.answer').textContent,
+    src: card.querySelector('.meta')?.textContent || '',
+    t: Date.now()
+  };
+  toggleFavorite(item);
+  btn.classList.toggle('fav-active');
+}
+
+/* ── AI 摘要 ── */
+async function fetchSummary(query, results, elapsed, resultCount) {
+  elSummary.style.display = 'block';
+  const rewriteTag = window._lastRewrite
+    ? `<div style="font-size:11px;color:rgba(var(--gold-rgb),0.5);margin-bottom:6px;">✏️ 查询改写：「${escapeHtml(window._lastRewrite)}」</div>`
+    : '';
+
+  elSummary.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-header"><span class="summary-icon">🤖</span>AI 摘要生成中</div>
+      ${rewriteTag}
+      <div class="summary-loading">
+        <span class="summary-dot"></span>
+        <span class="summary-dot"></span>
+        <span class="summary-dot"></span>
+      </div>
+    </div>`;
+
+  try {
+    // 只传 top 3 给摘要（减少 token 消耗）
+    const topResults = results.slice(0, 3).map((r, i) => ({
+      idx: i + 1,
+      question: r.metadata?.question || r.question || '',
+      answer: r.metadata?.answer || r.answer || ''
+    }));
+
+    const resp = await fetch(`${API_BASE}/api/summarize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, results: topResults })
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    elSummary.innerHTML = `
+      <div class="summary-card">
+        <div class="summary-header"><span class="summary-icon">🤖</span>AI 摘要</div>
+        ${rewriteTag}
+        <div class="summary-text">${escapeHtml(data.summary)}</div>
+        <div style="margin-top:10px;text-align:right;font-size:11px;color:rgba(var(--glass-rgb),0.25);">耗时 ${elapsed}s · ${resultCount} 条结果</div>
+      </div>`;
+  } catch (err) {
+    elSummary.innerHTML = `
+      <div class="summary-card">
+        <div class="summary-header"><span class="summary-icon">🤖</span>AI 摘要</div>
+        ${rewriteTag}
+        <div class="summary-text" style="color:rgba(var(--error-rgb),0.7);">摘要生成失败：${escapeHtml(err.message)}</div>
+        <div style="margin-top:10px;text-align:right;font-size:11px;color:rgba(var(--glass-rgb),0.25);">耗时 ${elapsed}s · ${resultCount} 条结果</div>
+      </div>`;
+  }
+}
+
+/* ═════════════════════════════════════════
+   回到顶部按钮
+   ═════════════════════════════════════════ */
+const btnTop = $('btnTop');
+window.addEventListener('scroll', () => {
+  if (window.scrollY > 400) btnTop.classList.add('visible');
+  else btnTop.classList.remove('visible');
+}, { passive: true });
+
+/* ═════════════════════════════════════════
+   粒子背景（Canvas）
+   ═════════════════════════════════════════ */
+;(function initParticles() {
+  const canvas = document.getElementById('bgCanvas');
+  const ctx    = canvas.getContext('2d');
+  let W, H, particles, stars, mouse;
+  let tc = {};
+
+  mouse = { x: -9999, y: -9999 };
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  document.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+
+  function readThemeColors() {
+    const s = getComputedStyle(document.documentElement);
+    tc = {
+      c0: s.getPropertyValue('--canvas-0').trim() || '#08081a',
+      c1: s.getPropertyValue('--canvas-1').trim() || '#040410',
+      c2: s.getPropertyValue('--canvas-2').trim() || '#010108',
+      starRgb: s.getPropertyValue('--star-rgb').trim() || '255,255,255',
+      accentRgb: s.getPropertyValue('--accent-rgb').trim() || '100,130,255',
+      particles: ['180,200,255','150,170,255','200,210,255','100,130,255','220,225,255'],
+    };
+    if (document.documentElement.getAttribute('data-theme') === 'light') {
+      tc.particles = ['150,160,180','130,140,160','160,170,190','120,130,170','170,180,200'];
+    }
+  }
+  readThemeColors();
+
+  class Particle {
+    constructor() { this.reset(true); }
+    reset(init) {
+      this.x  = init ? Math.random() * W : W + 20;
+      this.y  = Math.random() * H;
+      this.vx = -(Math.random() * 0.4 + 0.1);
+      this.vy = (Math.random() - 0.5) * 0.15;
+      this.r  = Math.random() * 1.5 + 0.3;
+      this.color = tc.particles[Math.floor(Math.random() * 5)];
+      this.alpha = Math.random() * 0.5 + 0.15;
+    }
+    update() {
+      this.x += this.vx;
+      this.y += this.vy;
+      const dx = this.x - mouse.x, dy = this.y - mouse.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 120) {
+        const force = (120 - dist) / 120 * 0.8;
+        this.vx -= (dx / dist) * force;
+        this.vy -= (dy / dist) * force;
+      }
+      this.vx += ( -(Math.random()*0.4+0.1) - this.vx ) * 0.01;
+      this.vy *= 0.99;
+      if (this.x < -20) this.reset(false);
+    }
+    draw() {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${this.color},${this.alpha})`;
+      ctx.fill();
+      if (this.r > 1) {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r * 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${this.color},${this.alpha * 0.12})`;
+        ctx.fill();
+      }
+    }
+  }
+
+  class Star {
+    constructor() {
+      this.x = Math.random() * W;
+      this.y = Math.random() * H;
+      this.r = Math.random() * 1.2;
+      this.alpha = Math.random() * 0.6 + 0.1;
+      this.twinkleSpeed = Math.random() * 0.005 + 0.002;
+      this.twinkleOffset = Math.random() * Math.PI * 2;
+    }
+    draw(t) {
+      const a = this.alpha * (0.6 + 0.4 * Math.sin(t * this.twinkleSpeed + this.twinkleOffset));
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${tc.starRgb},${a})`;
+      ctx.fill();
+    }
+  }
+
+  function drawLinks() {
+    const maxDist = 100;
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const d  = dx*dx + dy*dy;
+        if (d < maxDist * maxDist) {
+          const a = (1 - Math.sqrt(d)/maxDist) * 0.12;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = `rgba(${tc.accentRgb},${a * 0.6})`;
+          ctx.lineWidth = 0.5;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  const PARTICLE_COUNT = Math.min(Math.floor(W * H / 8000), 160);
+  particles = Array.from({ length: PARTICLE_COUNT }, () => new Particle());
+  stars     = Array.from({ length: 120 }, () => new Star());
+
+  let t = 0;
+  function animate() {
+    t++;
+    ctx.clearRect(0, 0, W, H);
+    const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.7);
+    grad.addColorStop(0, tc.c0);
+    grad.addColorStop(0.5, tc.c1);
+    grad.addColorStop(1, tc.c2);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+    stars.forEach(s => s.draw(t));
+    particles.forEach(p => { p.update(); p.draw(); });
+    drawLinks();
+    requestAnimationFrame(animate);
+  }
+  animate();
+
+  window._refreshCanvasTheme = function() {
+    readThemeColors();
+    particles.forEach(p => { p.color = tc.particles[Math.floor(Math.random() * 5)]; });
+  };
+})();
+</script>
+</body>
+</html>
