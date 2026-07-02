@@ -3,137 +3,70 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RAG 智能 FAQ 检索</title>
+  <title>ShopEasy · 智能客服</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ═════════════════════════════════════════
-       CSS 变量（主题系统）
-       ═════════════════════════════════════════ */
-    :root {
-      --glass-rgb: 255, 255, 255;
-      --accent-rgb: 100, 130, 255;
-      --gold-rgb: 255, 200, 80;
-      --error-rgb: 255, 107, 107;
-      --green-rgb: 74, 222, 128;
-      --accent: #6688ff;
-
-      --bg-primary: #03030a;
-      --text-primary: #e8e8e8;
-      --text-heading: #fff;
-      --btn-bg: linear-gradient(135deg, #2a2a4a 0%, #1a1a3a 100%);
-      --btn-bg-hover: linear-gradient(135deg, #3a3a6a 0%, #2a2a5a 100%);
-      --btn-color: #fff;
-      --input-bg: rgba(var(--glass-rgb), 0.06);
-      --input-border: rgba(var(--glass-rgb), 0.1);
-      --input-color: #eee;
-      --card-bg: rgba(var(--glass-rgb), 0.08);
-      --card-border: rgba(var(--glass-rgb), 0.14);
-      --card-shadow: 0 8px 40px rgba(0,0,0,0.5);
-      --card-shadow-hover: 0 4px 30px rgba(0,0,0,0.4);
-      --dropdown-bg: #0c0c1e;
-      --toast-bg: rgba(30,30,50,0.85);
-      --divider-line: rgba(var(--glass-rgb), 0.3);
-      --index-badge-color: #8aa4ff;
-
-      --canvas-0: #08081a;
-      --canvas-1: #040410;
-      --canvas-2: #010108;
-      --star-rgb: 255, 255, 255;
-    }
-
-    [data-theme="light"] {
-      --glass-rgb: 0, 0, 0;
-      --bg-primary: #f5f5f7;
-      --text-primary: #1a1a1a;
-      --text-heading: #111;
-      --btn-bg: linear-gradient(135deg, #e8e8f0 0%, #d8d8e8 100%);
-      --btn-bg-hover: linear-gradient(135deg, #d8d8e8 0%, #c8c8e0 100%);
-      --btn-color: #1a1a1a;
-      --input-bg: rgba(var(--glass-rgb), 0.04);
-      --input-border: rgba(var(--glass-rgb), 0.12);
-      --input-color: #1a1a1a;
-      --card-bg: rgba(var(--glass-rgb), 0.06);
-      --card-border: rgba(var(--glass-rgb), 0.10);
-      --card-shadow: 0 8px 40px rgba(0,0,0,0.08);
-      --card-shadow-hover: 0 4px 30px rgba(0,0,0,0.10);
-      --dropdown-bg: #f8f8fa;
-      --toast-bg: rgba(245,245,247,0.92);
-      --divider-line: rgba(var(--glass-rgb), 0.2);
-      --index-badge-color: #5570cc;
-
-      --canvas-0: #e8eaf0;
-      --canvas-1: #f0f0f5;
-      --canvas-2: #fafafc;
-      --star-rgb: 100, 100, 120;
-    }
-
     body {
-      font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      color: var(--text-primary);
+      font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      color: #1a1a1a;
       min-height: 100vh;
       overflow-x: hidden;
-      background: var(--bg-primary);
+      background: linear-gradient(180deg, #FFF7ED 0%, #FAFAF9 40%, #F9FAFB 100%);
     }
 
-    #bgCanvas {
-      position: fixed; top: 0; left: 0;
-      width: 100%; height: 100%;
-      z-index: 0; pointer-events: none;
-    }
-
+    /* ── 顶部导航栏 ── */
     header {
-      text-align: center;
-      padding: 60px 20px 30px;
-      position: relative;
-      z-index: 1;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: linear-gradient(135deg, #F97316, #EA580C);
+      box-shadow: 0 2px 12px rgba(234, 88, 12, 0.3);
+      padding: 0 24px;
+    }
+    header .header-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 56px;
+      gap: 10px;
+    }
+    header .logo-icon {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid rgba(255,255,255,0.3);
+      flex-shrink: 0;
+    }
+    header .logo-icon svg {
+      width: 18px; height: 18px;
     }
     header h1 {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--text-heading);
-      letter-spacing: 2px;
-      text-shadow: 0 0 40px rgba(var(--accent-rgb), 0.4);
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.5px;
     }
     header p {
-      font-size: 13px;
-      color: rgba(var(--glass-rgb), 0.4);
-      margin-top: 10px;
-      letter-spacing: 1px;
-    }
-
-    /* ── 主题切换按钮 ── */
-    .theme-toggle {
-      position: absolute;
-      top: 20px; right: 24px;
-      width: 40px; height: 40px;
-      display: flex; align-items: center; justify-content: center;
-      background: rgba(var(--glass-rgb), 0.06);
-      border: 1px solid rgba(var(--glass-rgb), 0.1);
-      border-radius: 14px;
-      cursor: pointer;
-      font-size: 18px;
-      color: rgba(var(--glass-rgb), 0.5);
-      transition: all .3s;
-      z-index: 10;
-    }
-    .theme-toggle:hover {
-      background: rgba(var(--glass-rgb), 0.1);
-      color: rgba(var(--glass-rgb), 0.8);
-      border-color: rgba(var(--gold-rgb), 0.3);
+      display: none;
     }
 
     /* ── 搜索卡片 ── */
     .search-card {
       max-width: 720px;
-      margin: 0 auto 40px;
-      padding: 32px 36px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 24px;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      box-shadow: var(--card-shadow);
+      margin: 24px auto 32px;
+      padding: 24px 28px;
+      background: #fff;
+      border: 1px solid rgba(249, 115, 22, 0.15);
+      border-radius: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
       position: relative;
       z-index: 1;
     }
@@ -152,30 +85,31 @@
       position: absolute;
       left: 16px;
       font-size: 15px;
-      color: rgba(var(--glass-rgb), 0.25);
+      color: #FB923C;
       pointer-events: none;
       transition: color .3s;
       z-index: 2;
     }
     .search-card input[type="text"] {
       width: 100%;
-      padding: 14px 42px 14px 42px;
-      font-size: 15px;
-      color: var(--input-color);
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 16px;
+      padding: 13px 40px 13px 42px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #374151;
+      background: #fff;
+      border: 1px solid rgba(249, 115, 22, 0.25);
+      border-radius: 14px;
       outline: none;
-      transition: border .3s, box-shadow .3s, background .3s;
+      transition: border .3s, box-shadow .3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
     }
-    .search-card input::placeholder { color: rgba(var(--glass-rgb), 0.25); }
+    .search-card input::placeholder { color: #FDBA74; }
     .search-card input:focus {
-      border-color: rgba(var(--accent-rgb), 0.5);
-      box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.1);
-      background: rgba(var(--glass-rgb), 0.08);
+      border-color: #FB923C;
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
     }
     .search-card input:focus ~ .input-search-icon {
-      color: rgba(var(--accent-rgb), 0.5);
+      color: #F97316;
     }
     .input-clear-btn {
       position: absolute;
@@ -188,46 +122,50 @@
       border-radius: 50%;
       cursor: pointer;
       font-size: 16px;
-      color: rgba(var(--glass-rgb), 0.3);
+      color: #D1D5DB;
       transition: color .2s, background .2s;
       z-index: 2;
     }
     .input-clear-btn.show { display: flex; }
     .input-clear-btn:hover {
-      color: rgba(var(--glass-rgb), 0.6);
-      background: rgba(var(--glass-rgb), 0.06);
+      color: #6B7280;
+      background: #F3F4F6;
     }
-    .search-card button {
-      padding: 0 32px;
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--btn-color);
-      background: var(--btn-bg);
-      border: 1px solid rgba(var(--accent-rgb), 0.2);
-      border-radius: 16px;
+    .search-card .btn-search {
+      padding: 0 28px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      color: #fff;
+      background: linear-gradient(135deg, #F97316, #EA580C);
+      border: none;
+      border-radius: 14px;
       cursor: pointer;
-      transition: all .3s;
+      transition: all .2s ease;
       white-space: nowrap;
       min-width: 80px;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
+      box-shadow: 0 2px 8px rgba(249, 115, 22, 0.3);
     }
-    .search-card button:hover {
-      background: var(--btn-bg-hover);
-      border-color: rgba(var(--accent-rgb), 0.4);
-      box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.15);
+    .search-card .btn-search:hover {
+      background: linear-gradient(135deg, #EA580C, #C2410C);
+      box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+      transform: translateY(-1px);
     }
-    .search-card button:disabled {
-      opacity: 0.7;
+    .search-card .btn-search:disabled {
+      opacity: 0.6;
       cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
     .btn-spinner {
       display: inline-block;
       width: 16px; height: 16px;
-      border: 2px solid rgba(var(--glass-rgb), 0.15);
-      border-top-color: rgba(var(--accent-rgb), 0.7);
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
       border-radius: 50%;
       animation: spin .6s linear infinite;
     }
@@ -235,43 +173,48 @@
 
     /* ── 搜索选项 ── */
     .search-card .options {
-      margin-top: 16px;
+      margin-top: 14px;
       display: flex;
       gap: 24px;
       flex-wrap: wrap;
       align-items: center;
       font-size: 13px;
-      color: rgba(var(--glass-rgb), 0.5);
+      color: #9CA3AF;
     }
     .search-card .options label {
       display: flex;
       align-items: center;
       gap: 6px;
       cursor: pointer;
+      color: #6B7280;
+      font-weight: 500;
     }
     .search-card .options input[type="checkbox"] {
-      accent-color: var(--accent);
+      accent-color: #F97316;
+      width: 16px; height: 16px;
     }
     .search-card .options input[type="number"] {
       width: 56px;
       padding: 4px 8px;
       font-size: 13px;
-      color: var(--input-color);
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
+      font-family: inherit;
+      color: #374151;
+      background: #fff;
+      border: 1px solid rgba(249, 115, 22, 0.25);
       border-radius: 8px;
       text-align: center;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
-    .search-card .options input[type="number"]:focus { outline: none; border-color: rgba(var(--accent-rgb), 0.4); }
+    .search-card .options input[type="number"]:focus { outline: none; border-color: #FB923C; }
 
     /* ── 历史遮罩 ── */
     .history-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.2);
+      background: rgba(0,0,0,0.15);
       z-index: 998;
-      pointer-events: none;  /* 点击穿透，避免吞掉输入框的 click 事件 */
+      pointer-events: none;
     }
     .history-overlay.show { display: block; }
 
@@ -282,12 +225,12 @@
       z-index: 999;
       width: 720px;
       max-width: calc(100vw - 32px);
-      max-height: 400px;
+      max-height: 360px;
       overflow-y: auto;
-      background: var(--dropdown-bg);
-      border: 1px solid rgba(var(--glass-rgb), 0.12);
+      background: #fff;
+      border: 1px solid rgba(249, 115, 22, 0.15);
       border-radius: 16px;
-      box-shadow: 0 20px 64px rgba(0,0,0,0.5);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
       animation: histIn .2s ease both;
     }
     .history-dropdown.show { display: block; }
@@ -295,11 +238,10 @@
       from { opacity: 0; transform: translateY(-8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .history-dropdown.show { display: block; }
     .history-item {
-      padding: 10px 18px;
+      padding: 11px 18px;
       font-size: 13px;
-      color: rgba(var(--glass-rgb), 0.7);
+      color: #4B5563;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
@@ -307,8 +249,8 @@
       transition: background .2s;
     }
     .history-item:hover {
-      background: rgba(var(--accent-rgb), 0.06);
-      color: rgba(var(--glass-rgb), 0.9);
+      background: #FFF7ED;
+      color: #EA580C;
     }
     .history-item .hw-text {
       overflow: hidden;
@@ -318,19 +260,19 @@
     }
     .history-item .hw-time {
       font-size: 11px;
-      color: rgba(var(--glass-rgb), 0.3);
+      color: #D1D5DB;
       flex-shrink: 0;
     }
     .history-clear {
       padding: 10px 18px;
       font-size: 12px;
-      color: rgba(var(--error-rgb), 0.6);
+      color: #EF4444;
       cursor: pointer;
       text-align: center;
-      border-top: 1px solid rgba(var(--glass-rgb), 0.08);
+      border-top: 1px solid #F3F4F6;
       transition: color .2s, background .2s;
     }
-    .history-clear:hover { color: rgba(var(--error-rgb), 0.9); background: rgba(var(--error-rgb), 0.04); }
+    .history-clear:hover { color: #DC2626; background: #FEF2F2; }
 
     /* ── 状态区域 ── */
     #elStatus, #elRewrite, #elStats {
@@ -341,37 +283,35 @@
     }
     #elStatus {
       font-size: 13px;
-      color: rgba(var(--accent-rgb), 0.6);
-      margin: 20px 0 10px;
+      color: #F97316;
+      margin: 16px 0 8px;
     }
     #elRewrite {
       font-size: 12px;
-      color: rgba(var(--gold-rgb), 0.5);
-      margin-bottom: 10px;
+      color: #F59E0B;
+      margin-bottom: 8px;
       min-height: 18px;
     }
     #elStats {
       font-size: 12px;
-      color: rgba(var(--glass-rgb), 0.35);
-      margin-bottom: 24px;
+      color: #9CA3AF;
+      margin-bottom: 20px;
     }
 
     /* ── AI 摘要卡片 ── */
     .summary-wrap {
       max-width: 720px;
-      margin: 0 auto 28px;
+      margin: 0 auto 24px;
       padding: 0 16px;
       position: relative;
       z-index: 1;
     }
     .summary-card {
-      background: var(--card-bg);
-      border: 1px solid rgba(var(--accent-rgb), 0.15);
+      background: #fff;
+      border: 1px solid rgba(249, 115, 22, 0.15);
       border-radius: 20px;
       padding: 20px 28px;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      box-shadow: var(--card-shadow);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
       position: relative;
       overflow: hidden;
     }
@@ -380,7 +320,7 @@
       position: absolute;
       inset: 0;
       border-radius: 20px;
-      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.04), transparent 50%);
+      background: linear-gradient(135deg, rgba(249,115,22,0.04), transparent 50%);
       pointer-events: none;
     }
     .summary-card .summary-header {
@@ -390,17 +330,14 @@
       margin-bottom: 10px;
       font-size: 13px;
       font-weight: 600;
-      color: rgba(var(--accent-rgb), 0.7);
+      color: #EA580C;
       position: relative;
     }
-    .summary-card .summary-icon {
-      font-size: 16px;
-    }
+    .summary-card .summary-icon { font-size: 16px; }
     .summary-card .summary-text {
       font-size: 14px;
       line-height: 1.8;
-      color: var(--text-primary);
-      opacity: 0.9;
+      color: #374151;
       position: relative;
     }
     .summary-card .summary-loading {
@@ -408,12 +345,12 @@
       align-items: center;
       gap: 8px;
       font-size: 13px;
-      color: rgba(var(--glass-rgb), 0.4);
+      color: #D1D5DB;
     }
     .summary-card .summary-dot {
       width: 6px; height: 6px;
       border-radius: 50%;
-      background: rgba(var(--accent-rgb), 0.5);
+      background: #FB923C;
       animation: dotPulse 1.4s infinite ease-in-out;
     }
     .summary-card .summary-dot:nth-child(2) { animation-delay: 0.2s; }
@@ -432,15 +369,13 @@
       z-index: 1;
     }
     .result-card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
+      background: #fff;
+      border: 1px solid rgba(249, 115, 22, 0.08);
       border-radius: 20px;
       padding: 28px 32px;
-      margin-bottom: 20px;
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      box-shadow: var(--card-shadow);
-      transition: transform .3s, box-shadow .3s;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      transition: transform .25s ease, box-shadow .25s ease;
       position: relative;
       opacity: 0;
       animation: cardIn .5s ease forwards;
@@ -454,32 +389,31 @@
       position: absolute;
       inset: 0;
       border-radius: 20px;
-      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.03), transparent 60%);
+      background: linear-gradient(135deg, rgba(249,115,22,0.02), transparent 60%);
       pointer-events: none;
     }
     .result-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--card-shadow-hover);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 28px -4px rgba(249, 115, 22, 0.12), 0 4px 10px -2px rgba(0, 0, 0, 0.04);
     }
     .result-card .idx {
       font-size: 11px;
       font-weight: 700;
-      color: var(--index-badge-color);
-      letter-spacing: 1px;
+      color: #F97316;
+      letter-spacing: 0.5px;
       margin-bottom: 10px;
     }
     .result-card .question {
       font-size: 16px;
       font-weight: 600;
-      color: var(--text-heading);
+      color: #1F2937;
       margin-bottom: 14px;
       line-height: 1.5;
     }
     .result-card .answer {
       font-size: 14px;
       line-height: 1.8;
-      color: var(--text-primary);
-      opacity: 0.85;
+      color: #4B5563;
     }
     .result-card .meta {
       margin-top: 16px;
@@ -487,18 +421,18 @@
       gap: 16px;
       align-items: center;
       font-size: 12px;
-      color: rgba(var(--glass-rgb), 0.35);
+      color: #D1D5DB;
     }
     .result-card .score-bar {
       height: 3px;
-      background: rgba(var(--accent-rgb), 0.1);
+      background: rgba(249, 115, 22, 0.1);
       border-radius: 2px;
       margin-top: 14px;
       overflow: hidden;
     }
     .result-card .score-fill {
       height: 100%;
-      background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.5), rgba(var(--accent-rgb), 0.2));
+      background: linear-gradient(90deg, #FB923C, #FED7AA);
       border-radius: 2px;
       transition: width .6s ease;
     }
@@ -506,7 +440,7 @@
     /* ── 卡片操作按钮（复制/收藏）── */
     .card-actions {
       position: absolute;
-      top: 18px;
+      top: 16px;
       right: 20px;
       display: flex;
       gap: 6px;
@@ -515,29 +449,29 @@
     .card-btn {
       width: 32px; height: 32px;
       display: flex; align-items: center; justify-content: center;
-      background: rgba(var(--glass-rgb), 0.10);
-      border: 1px solid rgba(var(--glass-rgb), 0.12);
+      background: #F9FAFB;
+      border: 1px solid #F3F4F6;
       border-radius: 10px;
       cursor: pointer;
       font-size: 14px;
-      color: rgba(var(--glass-rgb), 0.5);
-      transition: all .25s;
+      color: #9CA3AF;
+      transition: all .2s;
     }
     .card-btn:hover {
-      background: rgba(var(--accent-rgb), 0.1);
-      border-color: rgba(var(--accent-rgb), 0.25);
-      color: rgba(var(--accent-rgb), 0.8);
+      background: #FFF7ED;
+      border-color: #FDBA74;
+      color: #F97316;
     }
     .card-btn.fav-active {
-      background: rgba(var(--gold-rgb), 0.12);
-      border-color: rgba(var(--gold-rgb), 0.3);
-      color: #ffc850;
+      background: #FFFBEB;
+      border-color: #FCD34D;
+      color: #F59E0B;
     }
 
     /* ── Toast 提示 ── */
     .toast-container {
       position: fixed;
-      top: 24px;
+      top: 72px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 9999;
@@ -550,24 +484,24 @@
       padding: 10px 24px;
       border-radius: 14px;
       font-size: 13px;
-      font-weight: 500;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      font-weight: 600;
+      font-family: inherit;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       animation: toastIn .35s ease, toastOut .4s ease 2.2s forwards;
       pointer-events: auto;
       white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1);
     }
     .toast.copy-toast {
-      background: var(--toast-bg);
-      border: 1px solid rgba(var(--accent-rgb), 0.3);
-      color: #a0b4ff;
-      box-shadow: var(--card-shadow);
+      background: rgba(255,255,255,0.95);
+      border: 1px solid rgba(249, 115, 22, 0.2);
+      color: #EA580C;
     }
     .toast.fav-toast {
-      background: var(--toast-bg);
-      border: 1px solid rgba(var(--gold-rgb), 0.3);
-      color: #ffc850;
-      box-shadow: var(--card-shadow);
+      background: rgba(255,255,255,0.95);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #D97706;
     }
     @keyframes toastIn  { from { opacity:0; transform: translateY(-12px); } to { opacity:1; transform: translateY(0); } }
     @keyframes toastOut { from { opacity:1; } to { opacity:0; transform: translateY(-8px); } }
@@ -582,20 +516,20 @@
     }
     .welcome-guide .welcome-icon {
       font-size: 56px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       animation: welcomeFloat 3s ease-in-out infinite;
     }
     .welcome-guide .welcome-title {
-      font-size: 18px;
-      font-weight: 600;
-      color: rgba(var(--glass-rgb), 0.55);
-      letter-spacing: 2px;
+      font-size: 20px;
+      font-weight: 700;
+      color: #9A3412;
+      letter-spacing: 0.5px;
       margin-bottom: 8px;
     }
     .welcome-guide .welcome-hint {
-      font-size: 13px;
-      color: rgba(var(--glass-rgb), 0.28);
-      letter-spacing: 1px;
+      font-size: 14px;
+      color: #FDBA74;
+      letter-spacing: 0.5px;
     }
     @keyframes welcomeIn {
       from { opacity: 0; transform: translateY(20px); }
@@ -610,7 +544,7 @@
     .empty-state {
       text-align: center;
       padding: 60px 20px;
-      color: rgba(var(--glass-rgb), 0.3);
+      color: #FDBA74;
       font-size: 14px;
       z-index: 1;
       position: relative;
@@ -625,14 +559,13 @@
       right: 32px;
       width: 44px; height: 44px;
       display: flex; align-items: center; justify-content: center;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 16px;
+      background: #fff;
+      border: 1px solid rgba(249, 115, 22, 0.2);
+      border-radius: 14px;
       cursor: pointer;
       font-size: 18px;
-      color: rgba(var(--glass-rgb), 0.5);
-      box-shadow: var(--card-shadow);
-      backdrop-filter: blur(12px);
+      color: #F97316;
+      box-shadow: 0 2px 12px rgba(249, 115, 22, 0.15);
       z-index: 50;
       opacity: 0;
       transform: translateY(12px);
@@ -645,25 +578,29 @@
       pointer-events: auto;
     }
     .back-to-top:hover {
-      color: rgba(var(--accent-rgb), 0.8);
-      border-color: rgba(var(--accent-rgb), 0.3);
+      color: #EA580C;
+      border-color: #FB923C;
+      box-shadow: 0 4px 16px rgba(249, 115, 22, 0.25);
     }
 
     /* ── 滚动条 ── */
-    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(var(--glass-rgb), 0.12); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(var(--glass-rgb), 0.2); }
+    ::-webkit-scrollbar-thumb { background: #FDBA74; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #FB923C; }
   </style>
 </head>
 <body>
 
-<canvas id="bgCanvas"></canvas>
-
 <header>
-  <button class="theme-toggle" id="btnTheme" onclick="toggleTheme()" title="切换亮色/暗黑模式">🌙</button>
-  <h1>RAG · 智能 FAQ 检索</h1>
-  <p>向量检索 &times; 大语言模型 &mdash; 探索知识的宇宙</p>
+  <div class="header-inner">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+      </svg>
+    </div>
+    <h1>智能客服</h1>
+  </div>
 </header>
 
 <!-- Toast 容器 -->
@@ -680,10 +617,10 @@
   <div class="input-wrapper">
     <div class="input-icon-wrap">
       <span class="input-search-icon">🔍</span>
-      <input id="inputQ" type="text" placeholder="输入问题，例如：如何重置密码？" autocomplete="off" />
+      <input id="inputQ" type="text" placeholder="输入问题，例如：支付完成后能退款吗？" autocomplete="off" />
       <button class="input-clear-btn" id="btnClear" onclick="clearInput()" title="清除">×</button>
     </div>
-    <button id="btnSearch" onclick="doSearch()">搜 索</button>
+    <button id="btnSearch" class="btn-search" onclick="doSearch()">搜 索</button>
   </div>
   <div class="options">
     <label><input type="checkbox" id="cbRewrite" checked /> 查询改写</label>
@@ -701,9 +638,9 @@
 
 <!-- 欢迎引导 -->
 <div class="welcome-guide" id="elWelcome">
-  <div class="welcome-icon">🔭</div>
-  <div class="welcome-title">探索知识宇宙</div>
-  <div class="welcome-hint">输入问题，智能检索 FAQ 答案</div>
+  <div class="welcome-icon">🛒</div>
+  <div class="welcome-title">嗨，有什么可以帮您的？</div>
+  <div class="welcome-hint">关于下单、支付、物流、售后……我都懂一点</div>
 </div>
 
 <!-- 结果 -->
@@ -713,28 +650,6 @@
 <div class="back-to-top" id="btnTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</div>
 
 <script>
-/* ═════════════════════════════════════════
-   主题切换（暗黑 ⇄ 亮色）
-   ═════════════════════════════════════════ */
-const THEME_KEY = 'rag_theme';
-
-function getTheme() {
-  return localStorage.getItem(THEME_KEY) || 'dark';
-}
-function applyTheme(theme) {
-  const isDark = theme === 'dark';
-  document.documentElement.setAttribute('data-theme', isDark ? '' : 'light');
-  const btn = document.getElementById('btnTheme');
-  if (btn) btn.textContent = isDark ? '🌙' : '☀️';
-  if (window._refreshCanvasTheme) window._refreshCanvasTheme();
-  localStorage.setItem(THEME_KEY, theme);
-}
-function toggleTheme() {
-  const next = getTheme() === 'dark' ? 'light' : 'dark';
-  applyTheme(next);
-}
-applyTheme(getTheme());
-
 /* ═════════════════════════════════════════
    RAG 搜索逻辑
    ═════════════════════════════════════════ */
@@ -921,7 +836,7 @@ async function doSearch() {
 
     // 无结果
     if (!data.results || !data.results.length) {
-      elResults.innerHTML = `<div class="empty-state"><div class="icon">📭</div>未找到相关结果，请换个问法试试</div>`;
+      elResults.innerHTML = `<div class="empty-state"><div class="icon">📭</div>抱歉，没找到相关内容，试试换个问法吧</div>`;
       return;
     }
 
@@ -949,7 +864,7 @@ async function doSearch() {
     }).join('');
 
     // 结果底部耗时统计
-    elResults.innerHTML += `<div style="text-align:right;font-size:11px;color:rgba(var(--glass-rgb),0.25);margin-top:8px;padding:0 8px;">耗时 ${elapsed}s · 共 ${data.results.length} 条</div>`;
+    elResults.innerHTML += `<div style="text-align:right;font-size:11px;color:#D1D5DB;margin-top:8px;padding:0 8px;">耗时 ${elapsed}s · 共 ${data.results.length} 条</div>`;
 
     addHistory(q);
 
@@ -957,7 +872,7 @@ async function doSearch() {
     fetchSummary(q, data.results, elapsed, data.results.length);
 
   } catch (err) {
-    elStatus.innerHTML = `<span style="color:rgba(var(--error-rgb),0.8)">⚠️ 搜索失败：${escapeHtml(err.message)}</span>`;
+    elStatus.innerHTML = `<span style="color:#EF4444">⚠️ 搜索失败：${escapeHtml(err.message)}</span>`;
     elStatus.style.display = 'block';
   } finally {
     btnSearch.disabled = false;
@@ -998,7 +913,7 @@ function favCard(btn) {
 async function fetchSummary(query, results, elapsed, resultCount) {
   elSummary.style.display = 'block';
   const rewriteTag = window._lastRewrite
-    ? `<div style="font-size:11px;color:rgba(var(--gold-rgb),0.5);margin-bottom:6px;">✏️ 查询改写：「${escapeHtml(window._lastRewrite)}」</div>`
+    ? `<div style="font-size:11px;color:#F59E0B;margin-bottom:6px;">✏️ 查询改写：「${escapeHtml(window._lastRewrite)}」</div>`
     : '';
 
   elSummary.innerHTML = `
@@ -1034,15 +949,15 @@ async function fetchSummary(query, results, elapsed, resultCount) {
         <div class="summary-header"><span class="summary-icon">🤖</span>AI 摘要</div>
         ${rewriteTag}
         <div class="summary-text">${escapeHtml(data.summary)}</div>
-        <div style="margin-top:10px;text-align:right;font-size:11px;color:rgba(var(--glass-rgb),0.25);">耗时 ${elapsed}s · ${resultCount} 条结果</div>
+        <div style="margin-top:10px;text-align:right;font-size:11px;color:#D1D5DB;">耗时 ${elapsed}s · ${resultCount} 条结果</div>
       </div>`;
   } catch (err) {
     elSummary.innerHTML = `
       <div class="summary-card">
         <div class="summary-header"><span class="summary-icon">🤖</span>AI 摘要</div>
         ${rewriteTag}
-        <div class="summary-text" style="color:rgba(var(--error-rgb),0.7);">摘要生成失败：${escapeHtml(err.message)}</div>
-        <div style="margin-top:10px;text-align:right;font-size:11px;color:rgba(var(--glass-rgb),0.25);">耗时 ${elapsed}s · ${resultCount} 条结果</div>
+        <div class="summary-text" style="color:#EF4444;">摘要生成失败：${escapeHtml(err.message)}</div>
+        <div style="margin-top:10px;text-align:right;font-size:11px;color:#D1D5DB;">耗时 ${elapsed}s · ${resultCount} 条结果</div>
       </div>`;
   }
 }
@@ -1055,147 +970,6 @@ window.addEventListener('scroll', () => {
   if (window.scrollY > 400) btnTop.classList.add('visible');
   else btnTop.classList.remove('visible');
 }, { passive: true });
-
-/* ═════════════════════════════════════════
-   粒子背景（Canvas）
-   ═════════════════════════════════════════ */
-;(function initParticles() {
-  const canvas = document.getElementById('bgCanvas');
-  const ctx    = canvas.getContext('2d');
-  let W, H, particles, stars, mouse;
-  let tc = {};
-
-  mouse = { x: -9999, y: -9999 };
-
-  function resize() {
-    W = canvas.width  = window.innerWidth;
-    H = canvas.height = window.innerHeight;
-  }
-  window.addEventListener('resize', resize);
-  resize();
-
-  document.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
-  document.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
-
-  function readThemeColors() {
-    const s = getComputedStyle(document.documentElement);
-    tc = {
-      c0: s.getPropertyValue('--canvas-0').trim() || '#08081a',
-      c1: s.getPropertyValue('--canvas-1').trim() || '#040410',
-      c2: s.getPropertyValue('--canvas-2').trim() || '#010108',
-      starRgb: s.getPropertyValue('--star-rgb').trim() || '255,255,255',
-      accentRgb: s.getPropertyValue('--accent-rgb').trim() || '100,130,255',
-      particles: ['180,200,255','150,170,255','200,210,255','100,130,255','220,225,255'],
-    };
-    if (document.documentElement.getAttribute('data-theme') === 'light') {
-      tc.particles = ['150,160,180','130,140,160','160,170,190','120,130,170','170,180,200'];
-    }
-  }
-  readThemeColors();
-
-  class Particle {
-    constructor() { this.reset(true); }
-    reset(init) {
-      this.x  = init ? Math.random() * W : W + 20;
-      this.y  = Math.random() * H;
-      this.vx = -(Math.random() * 0.4 + 0.1);
-      this.vy = (Math.random() - 0.5) * 0.15;
-      this.r  = Math.random() * 1.5 + 0.3;
-      this.color = tc.particles[Math.floor(Math.random() * 5)];
-      this.alpha = Math.random() * 0.5 + 0.15;
-    }
-    update() {
-      this.x += this.vx;
-      this.y += this.vy;
-      const dx = this.x - mouse.x, dy = this.y - mouse.y;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      if (dist < 120) {
-        const force = (120 - dist) / 120 * 0.8;
-        this.vx -= (dx / dist) * force;
-        this.vy -= (dy / dist) * force;
-      }
-      this.vx += ( -(Math.random()*0.4+0.1) - this.vx ) * 0.01;
-      this.vy *= 0.99;
-      if (this.x < -20) this.reset(false);
-    }
-    draw() {
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${this.color},${this.alpha})`;
-      ctx.fill();
-      if (this.r > 1) {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r * 3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${this.color},${this.alpha * 0.12})`;
-        ctx.fill();
-      }
-    }
-  }
-
-  class Star {
-    constructor() {
-      this.x = Math.random() * W;
-      this.y = Math.random() * H;
-      this.r = Math.random() * 1.2;
-      this.alpha = Math.random() * 0.6 + 0.1;
-      this.twinkleSpeed = Math.random() * 0.005 + 0.002;
-      this.twinkleOffset = Math.random() * Math.PI * 2;
-    }
-    draw(t) {
-      const a = this.alpha * (0.6 + 0.4 * Math.sin(t * this.twinkleSpeed + this.twinkleOffset));
-      ctx.beginPath();
-      ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${tc.starRgb},${a})`;
-      ctx.fill();
-    }
-  }
-
-  function drawLinks() {
-    const maxDist = 100;
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x;
-        const dy = particles[i].y - particles[j].y;
-        const d  = dx*dx + dy*dy;
-        if (d < maxDist * maxDist) {
-          const a = (1 - Math.sqrt(d)/maxDist) * 0.12;
-          ctx.beginPath();
-          ctx.moveTo(particles[i].x, particles[i].y);
-          ctx.lineTo(particles[j].x, particles[j].y);
-          ctx.strokeStyle = `rgba(${tc.accentRgb},${a * 0.6})`;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
-        }
-      }
-    }
-  }
-
-  const PARTICLE_COUNT = Math.min(Math.floor(W * H / 8000), 160);
-  particles = Array.from({ length: PARTICLE_COUNT }, () => new Particle());
-  stars     = Array.from({ length: 120 }, () => new Star());
-
-  let t = 0;
-  function animate() {
-    t++;
-    ctx.clearRect(0, 0, W, H);
-    const grad = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.7);
-    grad.addColorStop(0, tc.c0);
-    grad.addColorStop(0.5, tc.c1);
-    grad.addColorStop(1, tc.c2);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
-    stars.forEach(s => s.draw(t));
-    particles.forEach(p => { p.update(); p.draw(); });
-    drawLinks();
-    requestAnimationFrame(animate);
-  }
-  animate();
-
-  window._refreshCanvasTheme = function() {
-    readThemeColors();
-    particles.forEach(p => { p.color = tc.particles[Math.floor(Math.random() * 5)]; });
-  };
-})();
 </script>
 </body>
 </html>

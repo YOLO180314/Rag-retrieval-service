@@ -6,6 +6,7 @@
   python run_bg.py restart # 重启
   python run_bg.py status  # 查看状态
 """
+from typing import Optional
 import os
 import sys
 import signal
@@ -17,7 +18,7 @@ PID_FILE = os.path.join(BASE_DIR, ".rag_server.pid")
 LOG_FILE = os.path.join(BASE_DIR, "server.log")
 
 
-def get_pid() -> int | None:
+def get_pid() -> Optional[int]:
     if not os.path.exists(PID_FILE):
         return None
     with open(PID_FILE) as f:

@@ -133,11 +133,11 @@ SWAGGER_HTML = f"""
 
 # ── FastAPI App ──
 app = FastAPI(
-    title="RAG 检索增强服务",
+    title="ShopEasy 智能客服检索服务",
     description="""
-## 🔍 服务说明
+## 🛒 服务说明
 
-基于 **ChromaDB + 大模型** 的智能 FAQ 检索服务。
+基于 **ChromaDB + 大模型** 的电商智能客服 FAQ 检索服务。
 
 ### 核心接口
 - **`POST /api/search`** — 检索 FAQ，支持 LLM 查询改写
@@ -149,7 +149,7 @@ app = FastAPI(
 3. 启动服务 `python main.py`，访问 `http://localhost:8001/docs`
 """,
     version="1.0.0",
-    contact={"name": "RAG Service", "url": "http://localhost:8001"},
+    contact={"name": "ShopEasy Support", "url": "http://localhost:8001"},
     openapi_version="3.1.0",
 )
 

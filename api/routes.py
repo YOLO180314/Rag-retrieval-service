@@ -1,6 +1,7 @@
 """
 FastAPI 路由：对外暴露 HTTP 检索接口
 """
+from typing import Optional, List, Dict
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -14,7 +15,7 @@ router = APIRouter()
 class SearchRequest(BaseModel):
     question: str
     enable_rewrite: bool = True
-    top_k: int | None = None
+    top_k: Optional[int] = None
 
 
 class HealthResponse(BaseModel):
@@ -24,7 +25,7 @@ class HealthResponse(BaseModel):
 
 class SummarizeRequest(BaseModel):
     query: str = Field(..., description="用户原始问题")
-    results: list[dict] = Field(..., description="检索结果列表，每项含 question/answer/score")
+    results: List[Dict] = Field(..., description="检索结果列表，每项含 question/answer/score")
 
 
 class SummarizeResponse(BaseModel):
